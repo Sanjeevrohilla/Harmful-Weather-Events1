@@ -1,0 +1,83 @@
+## Data Preprocessing 
+
+
+storm.data = read.csv(bzfile("StormData.csv.bz2"), header = TRUE)
+
+## We need only 4 Columns
+reduced.storm.data <- storm.data[,c("EVTYPE","FATALITIES","INJURIES","PROPDMG")]
+
+## Normalization
+
+reduced.storm.data$EVTYPE<- gsub("^HEAT$","EXCESSIVE HEAT",reduced.storm.data$EVTYPE)
+
+reduced.storm.data$EVTYPE <- gsub("^TSTMWIND$","THUNDERSTORM WIND", reduced.storm.data$EVTYPE)
+
+reduced.storm.data$EVTYPE <- gsub("^THUNDERSTORM WIND$","THUNDERSTORM WINDS", reduced.storm.data$EVTYPE)
+
+
+## Aggregate data on fatalties and find which events are the top 10 causes of fatalities
+
+age.fatalities.data <- aggregate(reduced.storm.data$FATALITIES,by = list(reduced.storm.data$EVTYPE), FUN = sum,na.rm = T)
+
+colnames(age.fatalities.data) = c("event.type", "fatality.total")
+
+fatalities.sorted <- 
+    age.fatalities.data[order(-age.fatalities.data$fatality.total),] 
+    
+top.fatalities <- fatalities.sorted[1:10,]
+
+top.fatalities$event.type <- 
+    factor(
+        top.fatalities$event.type, levels=top.fatalities$event.type, 
+        ordered=TRUE)
+        
+## Now will do same for Injuries
+
+age.injuries.data <- aggregate(reduced.storm.data$INJURIES,by = list(reduced.storm.data$EVTYPE), FUN = sum,na.rm = T)
+
+colnames(age.injuries.data) = c("event.type", "injury.total")
+
+injuries.sorted <- 
+    age.injuries.data[order(-age.injuries.data$injury.total),] 
+    
+top.injuries <- fatalities.sorted[1:10,]
+
+top.injuries$event.type <- 
+    factor(
+        top.injuries$event.type, levels=top.injuries$event.type, 
+        ordered=TRUE)
+## Now will do same forPropert damage
+
+agg.prop.dmg.data <-
+        aggregate(
+                reduced.storm.data$PROPDMG, 
+                by=list(reduced.storm.data$EVTYPE), FUN=sum, na.rm=TRUE)
+colnames(agg.prop.dmg.data) = c("event.type", "prop.dmg.total")
+prop.dmg.sorted <- agg.prop.dmg.data[order(-agg.prop.dmg.data$prop.dmg.total),] 
+top.prop.dmg <- prop.dmg.sorted[1:10,]
+top.prop.dmg$event.type <- 
+    factor(
+        top.prop.dmg$event.type, levels=top.prop.dmg$event.type, 
+        ordered=TRUE)
+        
+## Plot for fatalities
+
+library(ggplot2)
+ggplot(data=top.fatalities, aes(x=event.type, y=fatality.total)) + 
+    geom_bar(stat="identity") + xlab("Event type") + ylab("Total fatalities") + 
+    ggtitle("Fatalities By Event Type") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+## Plot for Injuries
+
+ggplot(data=top.injuries, aes(x=event.type, y=injury.total)) + 
+    geom_bar(stat="identity") + xlab("Event type") + ylab("Total injuries") + 
+    ggtitle("Injuries By Event Type") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    
+## Plot for propert Damage
+ggplot(data=top.prop.dmg, aes(x=event.type, y=prop.dmg.total)) + 
+    geom_bar(stat="identity") + xlab("Event type") + 
+    ylab("Total property damage") +  ggtitle("Property Damage By Event Type") + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
